@@ -1,97 +1,79 @@
 # Staging Disable Emails for MemberPress
 
-A WordPress plugin that disables all MemberPress emails on staging environments while allowing other emails (like 2FA) to work normally.
+A WordPress plugin that stops MemberPress from emailing real customers when you clone production to staging — without breaking 2FA, password resets, or other WordPress mail.
 
-## Description
+## The Problem
 
-This plugin specifically targets MemberPress emails by hooking into:
-- The `mepr_wp_mail_recipients` filter for core MemberPress emails (including Corporate and other addons that use the core system)
-- The `pre_wp_mail` filter for MemberPress addon emails that use their own email systems
+Cloning production to staging clones the entire database: active subscriptions, pending renewals, customer email addresses. WordPress cron keeps running. MemberPress keeps doing its job. Renewal notices, receipts, and expiration warnings get sent from staging to real customers, all pointing at the wrong site.
 
-When on a staging environment, it prevents MemberPress emails from being sent, including:
-- All core MemberPress emails (welcome, receipts, reminders, etc.)
-- MemberPress Corporate emails (sub-account signup, welcome, etc.)
-- MemberPress Courses emails (course completion, lesson completion, etc.)
-- MemberPress Gifting emails
-- MemberPress Downloads emails
-- All other MemberPress addon emails
+The staging site doesn't know it's staging. This plugin tells it.
 
-**Important:** This plugin only affects emails sent through MemberPress's email systems. Other WordPress emails that use `wp_mail()` directly (such as 2FA plugins, password reset emails, etc.) will continue to work normally.
+## What It Does
 
-## Staging Detection
+Blocks MemberPress emails (and only MemberPress emails) when the site is detected as staging and the feature is enabled:
 
-The plugin automatically detects staging environments using multiple methods:
+- All core MemberPress emails — welcome, receipts, renewals, expiration reminders
+- MemberPress Corporate — sub-account signup and welcome
+- MemberPress Courses — course and lesson completion
+- MemberPress Gifting, Downloads, and other addons that use the core email system or send through `wp_mail()` directly
 
-1. **WP_ENVIRONMENT_TYPE** constant (WordPress 5.5+) - Checks if set to `'staging'`
-2. **WP_ENV** constant - Checks if set to `'staging'`, `'stage'`, `'dev'`, or `'development'`
-3. **URL detection** - Checks if the site URL contains: `staging`, `stage`, `.test`, `.local`, or `localhost`
-4. **Custom filter** - Allows custom detection via `staging_disable_emails_memberpress_is_staging` filter
-
-## Custom Staging Detection
-
-If you need custom staging detection logic, you can use the filter:
-
-```php
-add_filter('staging_disable_emails_memberpress_is_staging', function($is_staging) {
-    // Add your custom detection logic here
-    // Return true if staging, false otherwise
-    return strpos($_SERVER['HTTP_HOST'], 'staging.yoursite.com') !== false;
-});
-```
-
-## Installation
-
-1. Upload the plugin folder (e.g. `memberpress-disable-emails-staging`) to `/wp-content/plugins/`
-2. Activate the plugin through the 'Plugins' menu in WordPress
-
-## How to Activate the Option
-
-After installing and activating the plugin, follow these steps to enable the email blocking feature:
-
-1. **Navigate to Settings**: In your WordPress admin dashboard, go to **Settings > Staging Disable Emails**
-2. **Enable the Feature**: Check the checkbox next to "Disable MemberPress Emails"
-3. **Verify Environment**: Check the "Environment Status" section to confirm your site is detected as a staging environment
-4. **Save Changes**: Click the "Save Changes" button at the bottom of the page
-
-Once enabled, all MemberPress emails will be blocked on staging environments. The setting will persist even when you clone your live site to staging, so you only need to enable it once.
+Everything else — 2FA codes, password resets, plugin notifications, admin alerts — passes through untouched.
 
 ## How It Works
 
-The plugin hooks into MemberPress's email system at the `mepr_wp_mail_recipients` filter. When this filter returns an empty array, MemberPress's email sending loop has no recipients to process, so no emails are sent.
+The plugin hooks into two filters:
 
-This approach is superior to disabling all WordPress emails because:
-- It only affects MemberPress emails
-- Other plugins' emails (2FA, password resets, etc.) continue to work
-- It can be easily enabled/disabled via the settings page
-- It works immediately after cloning live to staging (just enable the setting)
+- `mepr_wp_mail_recipients` — returns an empty recipient list for core MemberPress emails (and addons that use the core email system), so MemberPress's send loop has nothing to process.
+- `pre_wp_mail` — short-circuits sends for addons that bypass the core system and call `wp_mail()` directly with their own templates.
 
-## Settings
+Emails are blocked only when **both** conditions are met:
 
-The plugin adds a settings page at **Settings > Staging Disable Emails** where you can:
+1. The "Disable MemberPress Emails" setting is enabled.
+2. The site is detected as a staging environment.
 
-- **Enable/Disable**: Toggle the feature on or off with a simple checkbox
-  - Check the box to enable email blocking on staging
-  - Uncheck the box to allow MemberPress emails to be sent normally
-- **Environment Status**: See whether the site is detected as staging or production
-  - Shows "Staging Environment Detected" in red if staging is detected
-  - Shows "Production Environment" in green if not detected as staging
-- The setting is stored in the database, so it persists when you clone from live to staging
+This is intentional. Detection alone false-positives on dev domains that happen to contain `stage`. A setting alone defeats the point — someone has to remember to flip it after every clone. Together, they fail safe.
 
-**Note**: The plugin will only block emails when both conditions are met:
-1. The option is enabled (checkbox is checked)
-2. The site is detected as a staging environment
+## Staging Detection
+
+A site is treated as staging if any of the following match:
+
+| Method | Trigger |
+|---|---|
+| `WP_ENVIRONMENT_TYPE` constant (WP 5.5+) | Set to `staging` |
+| `WP_ENV` constant | Set to `staging`, `stage`, `dev`, or `development` |
+| Site URL contains | `staging`, `stage`, `.test`, `.local`, or `localhost` |
+| Custom filter | Returns `true` from `staging_disable_emails_memberpress_is_staging` |
+
+### Custom Detection
+
+For non-standard staging conventions, override detection with a filter:
+
+```php
+add_filter( 'staging_disable_emails_memberpress_is_staging', function ( $is_staging ) {
+    return strpos( $_SERVER['HTTP_HOST'], 'staging.yoursite.com' ) !== false;
+} );
+```
+
+## Setup
+
+1. Upload the plugin folder to `/wp-content/plugins/` and activate it through the Plugins menu.
+2. Go to **Settings → Staging Disable Emails**.
+3. Confirm the **Environment Status** banner shows the site is detected as staging (red) or production (green).
+4. Check **Disable MemberPress Emails** and save.
+
+The setting is stored in the database, so it persists through clone-to-staging operations. Enable it once on staging and it stays enabled the next time the database is refreshed from production — no checklist required.
 
 ## Requirements
 
 - WordPress 5.0+
-- MemberPress plugin installed and active
+- MemberPress installed and active
 
 ## Changelog
 
 ### 1.0.0
+
 - Initial release
-- Disables all MemberPress emails (core, Courses, Corporate, Gifting, Downloads, and all addons) on staging environments
-- Enable/disable setting with admin settings page
-- Environment status indicator
-- Supports multiple staging detection methods
-- Allows custom staging detection via filter
+- Blocks all MemberPress emails on staging — core plus Corporate, Courses, Gifting, Downloads, and other addons
+- Admin settings page with environment status indicator
+- Multi-method staging detection: `WP_ENVIRONMENT_TYPE`, `WP_ENV`, URL patterns
+- Custom detection via `staging_disable_emails_memberpress_is_staging` filter
