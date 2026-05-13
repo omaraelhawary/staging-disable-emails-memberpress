@@ -1,79 +1,196 @@
 # Staging Disable Emails for MemberPress
 
-A WordPress plugin that stops MemberPress from emailing real customers when you clone production to staging — without breaking 2FA, password resets, or other WordPress mail.
+WordPress plugin for **MemberPress staging safe mode**: block MemberPress-related mail, pause reminders, bias gateways toward test/sandbox at runtime, optionally unload Developer Tools, and optionally notify admins when non-production is detected — without turning off normal WordPress email (2FA, password reset, etc.).
 
-## The Problem
+**Version:** 1.3.0  
+**Requires:** WordPress 5.0+, MemberPress (active) for the settings screen and MemberPress hooks.
 
-Cloning production to staging clones the entire database: active subscriptions, pending renewals, customer email addresses. WordPress cron keeps running. MemberPress keeps doing its job. Renewal notices, receipts, and expiration warnings get sent from staging to real customers, all pointing at the wrong site.
+---
 
-The staging site doesn't know it's staging. This plugin tells it.
+## The problem
 
-## What It Does
+Cloning production to staging copies the database: real member emails, subscriptions, and crons. MemberPress keeps sending receipts, reminders, and renewal notices from the wrong host unless you reconfigure everything by hand.
 
-Blocks MemberPress emails (and only MemberPress emails) when the site is detected as staging and the feature is enabled:
+## What this plugin does
 
-- All core MemberPress emails — welcome, receipts, renewals, expiration reminders
-- MemberPress Corporate — sub-account signup and welcome
-- MemberPress Courses — course and lesson completion
-- MemberPress Gifting, Downloads, and other addons that use the core email system or send through `wp_mail()` directly
+Configure everything under **MemberPress → Staging safe mode**. When the site is treated as **non-production** and **Enable safe mode** is on, you can toggle:
 
-Everything else — 2FA codes, password resets, plugin notifications, admin alerts — passes through untouched.
+| Safeguard | Behavior |
+|-----------|----------|
+| **Emails** | Clears recipients on `mepr_wp_mail_recipients` and short-circuits `wp_mail` when the stack shows MemberPress core or `memberpress-*` add-ons (heuristic). Other plugins’ mail is unchanged. |
+| **Reminders** | Forces `mepr_disable_reminder_crons` via `pre_option_*` and sets MemberPress `mepr_{event}_reminder_disable` filters so reminder emails do not send. |
+| **Gateways** | Filters `option_mepr_options` so supported gateways get `test_mode` / `sandbox` at **read** time only (no DB write). PayPal Commerce / Connect is not forced; use MemberPress + PayPal sandbox docs. |
+| **Developer Tools** | Deactivates `memberpress-developer-tools/main.php` while this module is on; reactivates when you turn it off or leave non-production / disable safe mode (tracks a small flag option). |
+| **Notifications** | Optional: email site admin **once per `home_url()` hash** the first time a capable user hits `admin_init` on a non-production site (uses `wp_mail`, not MemberPress). |
 
-## How It Works
+Official MemberPress staging guidance: [How to create a staging site with MemberPress](https://memberpress.com/docs/how-to-create-a-staging-site-with-memberpress/).
 
-The plugin hooks into two filters:
+---
 
-- `mepr_wp_mail_recipients` — returns an empty recipient list for core MemberPress emails (and addons that use the core email system), so MemberPress's send loop has nothing to process.
-- `pre_wp_mail` — short-circuits sends for addons that bypass the core system and call `wp_mail()` directly with their own templates.
+## Installation
 
-Emails are blocked only when **both** conditions are met:
+1. Copy the plugin folder into `wp-content/plugins/` (or install via ZIP in **Plugins → Add New**).
+2. Activate **Staging Disable Emails for MemberPress**.
+3. Ensure **MemberPress** is active (the settings UI is a **MemberPress** submenu).
 
-1. The "Disable MemberPress Emails" setting is enabled.
-2. The site is detected as a staging environment.
+There is **no** entry under **Settings**; everything lives under **MemberPress → Staging safe mode**.
 
-This is intentional. Detection alone false-positives on dev domains that happen to contain `stage`. A setting alone defeats the point — someone has to remember to flip it after every clone. Together, they fail safe.
+---
 
-## Staging Detection
+## Quick setup
 
-A site is treated as staging if any of the following match:
+1. Open **MemberPress → Staging safe mode**.
+2. Check **Environment** (non-production vs production).
+3. Enable **Enable safe mode**, choose **Safeguards** and **Notifications**, then **Save**.
+
+Settings are stored in the database and survive cloning; re-check after each pull from production if your workflow resets options.
+
+---
+
+## When safeguards actually run
+
+Most behavior runs only when **both** are true:
+
+1. **Non-production** — see [Staging detection](#staging-detection).
+2. **Enable safe mode** — master switch on the settings page.
+
+The **Emails** safeguard additionally requires its checkbox to be on. Same pattern: each safeguard has its own checkbox under **Safeguards**.
+
+---
+
+## How it works (technical)
+
+### Email blocking
+
+- **`mepr_wp_mail_recipients`** — returns an empty recipient list so MemberPress core mail does not send.
+- **`pre_wp_mail`** — returns a truthy short-circuit when the backtrace shows a file under `wp-content/plugins/memberpress/` or `wp-content/plugins/memberpress-*/` and the frame looks email-related (classes/functions containing Email, Utils, wp_mail, send, email).
+
+### Reminders
+
+- **`pre_option_mepr_disable_reminder_crons`** — returns a truthy value so MemberPress skips scheduling reminder crons.
+- **`mepr_{trigger_event}_reminder_disable`** — for each reminder event (e.g. `mepr_sub-expires_reminder_disable`), returns `true` to skip sending.
+
+### Gateways
+
+- **`option_mepr_options`** — merges test/sandbox flags into `integrations` and `legacy_integrations` rows for supported gateway class names (Stripe, legacy PayPal family, Square, Authorize.Net).
+
+### Developer Tools
+
+- **`deactivate_plugins( 'memberpress-developer-tools/main.php' )`** when conditions match; restoration uses **`activate_plugin`** when safe mode / module / environment no longer applies.
+
+---
+
+## Staging detection
+
+A site is **non-production** if **any** of these match:
 
 | Method | Trigger |
-|---|---|
-| `WP_ENVIRONMENT_TYPE` constant (WP 5.5+) | Set to `staging` |
-| `WP_ENV` constant | Set to `staging`, `stage`, `dev`, or `development` |
-| Site URL contains | `staging`, `stage`, `.test`, `.local`, or `localhost` |
-| Custom filter | Returns `true` from `staging_disable_emails_memberpress_is_staging` |
+|--------|---------|
+| `WP_ENVIRONMENT_TYPE` | `staging`, `local`, or `development` |
+| `WP_ENV` | `staging`, `stage`, `local`, `dev`, or `development` |
+| Site URL (`home_url()`) | Contains `staging`, `stage`, `.test`, `.local`, or `localhost` (case-insensitive substring) |
+| Legacy filter | `mepr_disable_emails_is_staging` returns true |
+| Primary filter | `staging_disable_emails_memberpress_is_staging` returns true |
 
-### Custom Detection
-
-For non-standard staging conventions, override detection with a filter:
+### Custom detection
 
 ```php
 add_filter( 'staging_disable_emails_memberpress_is_staging', function ( $is_staging ) {
-    return strpos( $_SERVER['HTTP_HOST'], 'staging.yoursite.com' ) !== false;
-} );
+    return $is_staging || ( isset( $_SERVER['HTTP_HOST'] ) && strpos( $_SERVER['HTTP_HOST'], 'staging.example.com' ) !== false );
+}, 10, 1 );
 ```
 
-## Setup
+---
 
-1. Upload the plugin folder to `/wp-content/plugins/` and activate it through the Plugins menu.
-2. Go to **Settings → Staging Disable Emails**.
-3. Confirm the **Environment Status** banner shows the site is detected as staging (red) or production (green).
-4. Check **Disable MemberPress Emails** and save.
+## Options (database)
 
-The setting is stored in the database, so it persists through clone-to-staging operations. Enable it once on staging and it stays enabled the next time the database is refreshed from production — no checklist required.
+| Option | Purpose |
+|--------|---------|
+| `staging_disable_emails_memberpress_config` | Serialized array: `enabled`, `emails`, `reminders`, `gateways`, `developer_tools`, `notify_staging_detection`. |
+| `staging_disable_emails_memberpress_enabled` | Boolean mirror of master `enabled` (for older integrations that read this key). |
+| `mepr_disable_emails_staging_enabled` | Legacy; migrated into config on first read if present. |
+| `staging_mepr_dt_deactivated_by_sdem` | Set to `1` when this plugin deactivated Developer Tools so it can restore on toggle-off. |
+| `sdem_staging_detection_notice_sent_for` | MD5 of `home_url()` after the one-time staging notification email sends; delete to allow another send on the same URL (testing). |
 
-## Requirements
+---
 
-- WordPress 5.0+
-- MemberPress installed and active
+## Filters (developers)
+
+| Filter | Default | Purpose |
+|--------|---------|---------|
+| `staging_disable_emails_memberpress_is_staging` | — | Mark site as non-production. |
+| `mepr_disable_emails_is_staging` | — | Legacy alias read before the filter above. |
+| `staging_disable_emails_memberpress_show_admin_bar_badge` | `true` | Hide the **MP Safe Mode** admin bar item when `false`. |
+| `staging_disable_emails_memberpress_send_staging_detection_email` | `true` | Disable the one-time admin email when `false`. |
+| `staging_disable_emails_memberpress_staging_detection_email_recipients` | `[ get_option( 'admin_email' ) ]` | Override recipient list (array of emails). |
+| `staging_disable_emails_memberpress_log_suppressed` | `false` | When `true`, logs suppressed MemberPress-related sends to the PHP error log (with email debug constant below). |
+
+---
+
+## Constants (`wp-config.php`)
+
+```php
+// When true, suppressed MemberPress-related email attempts are written to the PHP error log
+// (in addition to the filter `staging_disable_emails_memberpress_log_suppressed`).
+define( 'STAGING_DISABLE_MEPR_EMAILS_DEBUG', true );
+```
+
+---
+
+## Admin bar
+
+When non-production **and** safe mode are on, users with the same capability as the MemberPress admin menu see **MP Safe Mode** (red style) linking to **MemberPress → Staging safe mode**.
+
+---
+
+## Code layout
+
+| Path | Role |
+|------|------|
+| `staging-disable-emails-memberpress.php` | Bootstrap: `SDEM_*` constants, loads `includes/`, starts `SDEM_Plugin`. |
+| `includes/class-sdem-plugin.php` | Singleton wiring: config, environment, notifier, admin, admin bar, safeguards. |
+| `includes/class-sdem-config.php` | Option names, defaults, migration, getters for each module. |
+| `includes/class-sdem-environment.php` | `is_staging()`, `get_menu_capability()`. |
+| `includes/class-sdem-safeguards.php` | All MemberPress-facing runtime hooks. |
+| `includes/class-sdem-admin.php` | Submenu + settings form + `register_setting`. |
+| `includes/class-sdem-admin-bar.php` | Admin bar node + inline CSS. |
+| `includes/class-sdem-staging-notifier.php` | One-time `wp_mail` on staging detection. |
+| `includes/index.php` | Silence direct directory access. |
+
+---
 
 ## Changelog
 
+### 1.3.0
+
+- Refactored into `includes/` (`SDEM_*` classes).
+- **Notifications:** optional one-time admin email when non-production is detected (per `home_url()` hash); option `sdem_staging_detection_notice_sent_for`.
+- README expanded (options, filters, hooks, layout).
+
+### 1.2.2
+
+- Settings moved to **MemberPress → Staging safe mode** (removed **Settings** submenu).
+- Admin bar link updated to `admin.php?page=…`; capability aligned with `MeprUtils::get_mepr_admin_capability()` when available.
+
+### 1.2.1
+
+- Admin bar **MP Safe Mode** badge when safe mode is active on non-production.
+
+### 1.1.0
+
+- Broader non-production detection (`local`, `development`, URL/core paths for `pre_wp_mail`).
+- Settings checklist + doc links; optional debug logging for suppressed sends.
+
 ### 1.0.0
 
-- Initial release
-- Blocks all MemberPress emails on staging — core plus Corporate, Courses, Gifting, Downloads, and other addons
-- Admin settings page with environment status indicator
-- Multi-method staging detection: `WP_ENVIRONMENT_TYPE`, `WP_ENV`, URL patterns
-- Custom detection via `staging_disable_emails_memberpress_is_staging` filter
+- Initial release: MemberPress email blocking on staging with a settings UI and staging heuristics.
+
+---
+
+## License
+
+GPL-2.0-or-later (same as WordPress). See `License` in the main plugin file header.
+
+## Support
+
+Plugin header lists author URI and plugin URI. [MemberPress documentation](https://memberpress.com/docs/) and [support](https://memberpress.com/account/support/) cover the core product; use your own channels for this add-on.
