@@ -31,7 +31,7 @@ class SDEM_Plugin {
 
     private function __construct() {
         $config = new SDEM_Config();
-        $env    = new SDEM_Environment();
+        $env    = new SDEM_Environment($config);
 
         $notifier = new SDEM_Staging_Notifier($config, $env);
         $notifier->init();

@@ -15,9 +15,37 @@ if (!defined('ABSPATH')) {
 class SDEM_Environment {
 
     /**
+     * @var SDEM_Config
+     */
+    private $config;
+
+    /**
+     * @param SDEM_Config $config Plugin config (for optional force-non-production override).
+     */
+    public function __construct(SDEM_Config $config) {
+        $this->config = $config;
+    }
+
+    /**
+     * True when safeguards should treat this install as non-production.
+     *
      * @return bool
      */
     public function is_staging() {
+        if ($this->config->is_force_nonproduction()) {
+            return true;
+        }
+
+        return $this->is_nonproduction_detected();
+    }
+
+    /**
+     * Staging / local / dev from WordPress constants, site URL heuristics, or filters only
+     * (does not include the plugin’s “force non-production” setting).
+     *
+     * @return bool
+     */
+    public function is_nonproduction_detected() {
         if (defined('WP_ENVIRONMENT_TYPE')) {
             $env = strtolower((string) WP_ENVIRONMENT_TYPE);
             if (in_array($env, array('staging', 'local', 'development'), true)) {

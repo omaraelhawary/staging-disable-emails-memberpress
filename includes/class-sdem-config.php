@@ -30,7 +30,7 @@ class SDEM_Config {
     private $cache = null;
 
     /**
-     * @return array{enabled:bool,emails:bool,reminders:bool,gateways:bool,developer_tools:bool,notify_staging_detection:bool}
+     * @return array{enabled:bool,emails:bool,reminders:bool,gateways:bool,developer_tools:bool,notify_staging_detection:bool,force_nonproduction:bool}
      */
     public function get() {
         if ($this->cache !== null) {
@@ -44,6 +44,7 @@ class SDEM_Config {
             'gateways'                 => false,
             'developer_tools'          => false,
             'notify_staging_detection' => true,
+            'force_nonproduction'      => false,
         );
 
         $stored = get_option(self::CONFIG_OPTION, null);
@@ -61,6 +62,7 @@ class SDEM_Config {
                 'gateways'                 => false,
                 'developer_tools'          => false,
                 'notify_staging_detection' => true,
+                'force_nonproduction'      => false,
             );
             update_option(self::CONFIG_OPTION, $stored, false);
         }
@@ -80,6 +82,7 @@ class SDEM_Config {
             'gateways'                 => false,
             'developer_tools'          => false,
             'notify_staging_detection' => true,
+            'force_nonproduction'      => false,
         );
         $clean = array_merge($defaults, array_intersect_key($config, $defaults));
         update_option(self::CONFIG_OPTION, $clean, false);
@@ -104,6 +107,7 @@ class SDEM_Config {
             'gateways'                 => !empty($value['gateways']),
             'developer_tools'          => !empty($value['developer_tools']),
             'notify_staging_detection' => !empty($value['notify_staging_detection']),
+            'force_nonproduction'      => !empty($value['force_nonproduction']),
         );
     }
 
@@ -153,6 +157,16 @@ class SDEM_Config {
     public function should_notify_staging_detection() {
         $c = $this->get();
         return !empty($c['notify_staging_detection']);
+    }
+
+    /**
+     * User override: treat install as non-production for safeguards regardless of WP / URL detection.
+     *
+     * @return bool
+     */
+    public function is_force_nonproduction() {
+        $c = $this->get();
+        return !empty($c['force_nonproduction']);
     }
 
     /**

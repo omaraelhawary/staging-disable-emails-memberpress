@@ -1,8 +1,8 @@
 # Staging Disable Emails for MemberPress
 
-WordPress plugin for **MemberPress staging safe mode**: block MemberPress-related mail, pause reminders, bias gateways toward test/sandbox at runtime, optionally unload Developer Tools, and optionally notify admins when non-production is detected — without turning off normal WordPress email (2FA, password reset, etc.).
+WordPress plugin for **MemberPress staging safe mode**: block MemberPress-related mail, pause reminders, bias gateways toward test/sandbox at runtime, optionally unload Developer Tools, optionally **force** non-production when automatic detection still says production, and optionally notify admins when non-production is detected — without turning off normal WordPress email (2FA, password reset, etc.).
 
-**Version:** 1.3.0  
+**Version:** 1.3.1  
 **Requires:** WordPress 5.0+, MemberPress (active) for the settings screen and MemberPress hooks.
 
 ---
@@ -13,7 +13,7 @@ Cloning production to staging copies the database: real member emails, subscript
 
 ## What this plugin does
 
-Configure everything under **MemberPress → Staging safe mode**. When the site is treated as **non-production** and **Enable safe mode** is on, you can toggle:
+Configure everything under **MemberPress → Staging safe mode**. When the site is treated as **non-production** (automatic detection or the **Force treat this site as non-production** override) and **Enable safe mode** is on, you can toggle:
 
 | Safeguard | Behavior |
 |-----------|----------|
@@ -21,7 +21,7 @@ Configure everything under **MemberPress → Staging safe mode**. When the site 
 | **Reminders** | Forces `mepr_disable_reminder_crons` via `pre_option_*` and sets MemberPress `mepr_{event}_reminder_disable` filters so reminder emails do not send. |
 | **Gateways** | Filters `option_mepr_options` so supported gateways get `test_mode` / `sandbox` at **read** time only (no DB write). PayPal Commerce / Connect is not forced; use MemberPress + PayPal sandbox docs. |
 | **Developer Tools** | Deactivates `memberpress-developer-tools/main.php` while this module is on; reactivates when you turn it off or leave non-production / disable safe mode (tracks a small flag option). |
-| **Notifications** | Optional: email site admin **once per `home_url()` hash** the first time a capable user hits `admin_init` on a non-production site (uses `wp_mail`, not MemberPress). |
+| **Notifications** | Optional: email site admin **once per `home_url()` hash** the first time a capable user hits `admin_init` when automatic detection sees non-production (uses `wp_mail`, not MemberPress). Skipped if you only use the **force** override (no “detected” email). |
 
 Official MemberPress staging guidance: [How to create a staging site with MemberPress](https://memberpress.com/docs/how-to-create-a-staging-site-with-memberpress/).
 
@@ -40,7 +40,7 @@ There is **no** entry under **Settings**; everything lives under **MemberPress �
 ## Quick setup
 
 1. Open **MemberPress → Staging safe mode**.
-2. Check **Environment** (non-production vs production).
+2. Check **Environment** (non-production vs production). If WordPress still shows **Production** but this install is really a clone, enable **Force treat this site as non-production** (see [Staging detection](#staging-detection)).
 3. Enable **Enable safe mode**, choose **Safeguards** and **Notifications**, then **Save**.
 
 Settings are stored in the database and survive cloning; re-check after each pull from production if your workflow resets options.
@@ -51,7 +51,7 @@ Settings are stored in the database and survive cloning; re-check after each pul
 
 Most behavior runs only when **both** are true:
 
-1. **Non-production** — see [Staging detection](#staging-detection).
+1. **Non-production** — automatic detection **or** the **Force treat this site as non-production** checkbox (see [Staging detection](#staging-detection)).
 2. **Enable safe mode** — master switch on the settings page.
 
 The **Emails** safeguard additionally requires its checkbox to be on. Same pattern: each safeguard has its own checkbox under **Safeguards**.
@@ -82,7 +82,11 @@ The **Emails** safeguard additionally requires its checkbox to be on. Same patte
 
 ## Staging detection
 
-A site is **non-production** if **any** of these match:
+Internally, **“staging” / non-production** means the same gate used for safeguards and the admin bar: `SDEM_Environment::is_staging()`.
+
+### Automatic detection
+
+A site counts as non-production **without** the plugin override if **any** of these match:
 
 | Method | Trigger |
 |--------|---------|
@@ -91,6 +95,14 @@ A site is **non-production** if **any** of these match:
 | Site URL (`home_url()`) | Contains `staging`, `stage`, `.test`, `.local`, or `localhost` (case-insensitive substring) |
 | Legacy filter | `mepr_disable_emails_is_staging` returns true |
 | Primary filter | `staging_disable_emails_memberpress_is_staging` returns true |
+
+### Force override (settings UI)
+
+If automatic detection still shows **Production** (for example a clone on a URL without staging hints and `WP_ENVIRONMENT_TYPE` set to `production`), check **Force treat this site as non-production** under **Enable safe mode** and save. That sets `force_nonproduction` in config and makes `is_staging()` return true regardless of the table above.
+
+- Use only on real staging/dev clones, or when you accept that emails, reminders, gateway test mode, and Developer Tools handling will run on that URL.
+- Turn the override **off** before the same WordPress install serves a live production domain.
+- The one-time “non-production detected” notification email is **not** sent when only the force option applies (the copy is meant for automatic detection).
 
 ### Custom detection
 
@@ -106,7 +118,7 @@ add_filter( 'staging_disable_emails_memberpress_is_staging', function ( $is_stag
 
 | Option | Purpose |
 |--------|---------|
-| `staging_disable_emails_memberpress_config` | Serialized array: `enabled`, `emails`, `reminders`, `gateways`, `developer_tools`, `notify_staging_detection`. |
+| `staging_disable_emails_memberpress_config` | Serialized array: `enabled`, `emails`, `reminders`, `gateways`, `developer_tools`, `notify_staging_detection`, `force_nonproduction`. |
 | `staging_disable_emails_memberpress_enabled` | Boolean mirror of master `enabled` (for older integrations that read this key). |
 | `mepr_disable_emails_staging_enabled` | Legacy; migrated into config on first read if present. |
 | `staging_mepr_dt_deactivated_by_sdem` | Set to `1` when this plugin deactivated Developer Tools so it can restore on toggle-off. |
@@ -139,7 +151,7 @@ define( 'STAGING_DISABLE_MEPR_EMAILS_DEBUG', true );
 
 ## Admin bar
 
-When non-production **and** safe mode are on, users with the same capability as the MemberPress admin menu see **MP Safe Mode** (red style) linking to **MemberPress → Staging safe mode**.
+When `is_staging()` is true (automatic detection **or** force override) **and** safe mode is on, users with the same capability as the MemberPress admin menu see **MP Safe Mode** (red style) linking to **MemberPress → Staging safe mode**.
 
 ---
 
@@ -150,7 +162,7 @@ When non-production **and** safe mode are on, users with the same capability as 
 | `staging-disable-emails-memberpress.php` | Bootstrap: `SDEM_*` constants, loads `includes/`, starts `SDEM_Plugin`. |
 | `includes/class-sdem-plugin.php` | Singleton wiring: config, environment, notifier, admin, admin bar, safeguards. |
 | `includes/class-sdem-config.php` | Option names, defaults, migration, getters for each module. |
-| `includes/class-sdem-environment.php` | `is_staging()`, `get_menu_capability()`. |
+| `includes/class-sdem-environment.php` | `is_staging()`, `is_nonproduction_detected()` (automatic path only), `get_menu_capability()`. |
 | `includes/class-sdem-safeguards.php` | All MemberPress-facing runtime hooks. |
 | `includes/class-sdem-admin.php` | Submenu + settings form + `register_setting`. |
 | `includes/class-sdem-admin-bar.php` | Admin bar node + inline CSS. |
@@ -160,6 +172,10 @@ When non-production **and** safe mode are on, users with the same capability as 
 ---
 
 ## Changelog
+
+### 1.3.1
+
+- **Force non-production:** optional setting to treat the install as non-production when automatic detection still reports production (admin UI + `force_nonproduction` in config). One-time staging detection email is skipped when only this override is used.
 
 ### 1.3.0
 

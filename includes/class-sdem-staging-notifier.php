@@ -44,6 +44,10 @@ class SDEM_Staging_Notifier {
      * Send once per home URL when non-production is detected and the option is enabled.
      */
     public function maybe_send_staging_detection_email() {
+        if ($this->config->is_force_nonproduction()) {
+            return;
+        }
+
         if (!$this->env->is_staging()) {
             return;
         }

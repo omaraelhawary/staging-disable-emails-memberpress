@@ -92,6 +92,8 @@ class SDEM_Admin {
 
         $c = $this->config->get();
         $is_staging = $this->env->is_staging();
+        $forced_nonproduction = $this->config->is_force_nonproduction();
+        $detected_nonproduction = $this->env->is_nonproduction_detected();
         $staging_doc = 'https://memberpress.com/docs/how-to-create-a-staging-site-with-memberpress/';
         $stop_all_doc = 'https://memberpress.com/docs/how-to-stop-emails-from-sending-from-your-staging-site/';
         $pfx = SDEM_Config::CONFIG_OPTION;
@@ -143,6 +145,16 @@ class SDEM_Admin {
                                 <input type="checkbox" name="<?php echo esc_attr($pfx); ?>[enabled]" value="1" <?php checked(!empty($c['enabled']), true); ?>>
                                 <?php echo esc_html__('Turn on MemberPress safeguards on non-production environments only', 'staging-disable-emails-memberpress'); ?>
                             </label>
+                            <p class="description" style="margin-top: 0.5rem;">
+                                <?php echo esc_html__('Non-production is detected from WordPress environment constants, your site URL, or custom filters. If this install is still reported as production, use the option below.', 'staging-disable-emails-memberpress'); ?>
+                            </p>
+                            <label style="display: block; margin-top: 0.75rem;">
+                                <input type="checkbox" name="<?php echo esc_attr($pfx); ?>[force_nonproduction]" value="1" <?php checked(!empty($c['force_nonproduction']), true); ?>>
+                                <?php echo esc_html__('Force treat this site as non-production (overrides automatic detection)', 'staging-disable-emails-memberpress'); ?>
+                            </label>
+                            <p class="description">
+                                <?php echo esc_html__('Use only on staging clones or when you accept that safeguards (emails blocked, test gateways, etc.) will run on this URL. Turn off before pointing a live domain here.', 'staging-disable-emails-memberpress'); ?>
+                            </p>
                         </td>
                     </tr>
                     <tr>
@@ -189,10 +201,18 @@ class SDEM_Admin {
                         </th>
                         <td>
                             <?php if ($is_staging) : ?>
-                                <span style="color: #d63638; font-weight: bold;"><?php echo esc_html__('Non-production detected', 'staging-disable-emails-memberpress'); ?></span>
-                                <p class="description">
-                                    <?php echo esc_html__('Safe mode runs here when enabled (staging / local / development URL or constants, or your custom filter).', 'staging-disable-emails-memberpress'); ?>
-                                </p>
+                                <?php if ($forced_nonproduction) : ?>
+                                    <span style="color: #d63638; font-weight: bold;"><?php echo esc_html__('Non-production (forced)', 'staging-disable-emails-memberpress'); ?></span>
+                                    <p class="description">
+                                        <?php echo esc_html__('Safeguards treat this install as non-production because you enabled the override. Automatic detection still reports:', 'staging-disable-emails-memberpress'); ?>
+                                        <?php echo $detected_nonproduction ? ' ' . esc_html__('non-production', 'staging-disable-emails-memberpress') : ' ' . esc_html__('production', 'staging-disable-emails-memberpress'); ?>.
+                                    </p>
+                                <?php else : ?>
+                                    <span style="color: #d63638; font-weight: bold;"><?php echo esc_html__('Non-production detected', 'staging-disable-emails-memberpress'); ?></span>
+                                    <p class="description">
+                                        <?php echo esc_html__('Safe mode runs here when enabled (staging / local / development URL or constants, or your custom filter).', 'staging-disable-emails-memberpress'); ?>
+                                    </p>
+                                <?php endif; ?>
                             <?php else : ?>
                                 <span style="color: #00a32a; font-weight: bold;"><?php echo esc_html__('Production', 'staging-disable-emails-memberpress'); ?></span>
                                 <p class="description">
