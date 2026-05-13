@@ -3,11 +3,10 @@
  * Plugin Name: Staging Disable Emails for MemberPress
  * Plugin URI: https://github.com/omaraelhawary/
  * Description: Disables all MemberPress emails (including Courses and Corporate) on staging environments while allowing other emails (like 2FA) to work normally.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Omar ElHawary
  * Author URI: https://github.com/omaraelhawary/
  * Text Domain: staging-disable-emails-memberpress
- * Domain Path: /i18n
  *
  * @package StagingDisableEmailsMemberPress
  */
@@ -31,7 +30,14 @@ class StagingDisableEmailsMemberPress {
      * Legacy option name (for migration from previous plugin slug).
      */
     const LEGACY_OPTION_NAME = 'mepr_disable_emails_staging_enabled';
-    
+
+    /**
+     * Whether debug logging for suppressed emails is active this request.
+     *
+     * @var bool|null
+     */
+    private $debug_log_active = null;
+
     /**
      * Initialize the plugin.
      */
@@ -49,7 +55,7 @@ class StagingDisableEmailsMemberPress {
             // Many addons (Courses, Gifting, Downloads, etc.) use their own email systems
             // that bypass MeprUtils::wp_mail(), so we intercept them here
             // Use pre_wp_mail filter (WordPress 5.7+) to short-circuit email sending
-            add_filter('pre_wp_mail', array($this, 'disable_courses_emails'), 10, 1);
+            add_filter('pre_wp_mail', array($this, 'disable_memberpress_wp_mail'), 10, 2);
         }
     }
     
@@ -118,9 +124,44 @@ class StagingDisableEmailsMemberPress {
 
         $enabled = $this->is_enabled();
         $is_staging = $this->is_staging();
+        $staging_doc = 'https://memberpress.com/docs/how-to-create-a-staging-site-with-memberpress/';
+        $stop_all_doc = 'https://memberpress.com/docs/how-to-stop-emails-from-sending-from-your-staging-site/';
         ?>
         <div class="wrap">
             <h1><?php echo esc_html__('Staging Disable Emails for MemberPress', 'staging-disable-emails-memberpress'); ?></h1>
+
+            <div class="card" style="max-width: 52rem; margin-bottom: 1.25rem;">
+                <h2 class="title" style="margin-top: 0;"><?php echo esc_html__('MemberPress staging checklist', 'staging-disable-emails-memberpress'); ?></h2>
+                <p class="description" style="margin-top: 0;">
+                    <?php echo esc_html__('This plugin blocks MemberPress-related email only. Complete the official staging steps so payments, webhooks, and integrations stay safe.', 'staging-disable-emails-memberpress'); ?>
+                </p>
+                <ul style="list-style: disc; margin-left: 1.25em;">
+                    <li>
+                        <?php
+                        echo wp_kses_post(
+                            sprintf(
+                                /* translators: %s: MemberPress staging documentation URL */
+                                __('Follow <a href="%s">How to create a staging site with MemberPress</a> for gateways (Stripe, PayPal, Square), clearing connection data, and test mode.', 'staging-disable-emails-memberpress'),
+                                esc_url($staging_doc)
+                            )
+                        );
+                        ?>
+                    </li>
+                    <li><?php echo esc_html__('On staging, disable or review MemberPress Reminders and turn off marketing add-ons (MailChimp, ActiveCampaign, Drip, etc.) so list/API actions do not run against production lists.', 'staging-disable-emails-memberpress'); ?></li>
+                    <li><?php echo esc_html__('Disable the MemberPress Developer Tools add-on on staging if it can trigger webhooks or automations you do not want against live services.', 'staging-disable-emails-memberpress'); ?></li>
+                    <li>
+                        <?php
+                        echo wp_kses_post(
+                            sprintf(
+                                /* translators: %s: URL to MemberPress article about stopping all staging emails */
+                                __('To block every outgoing email from WordPress (not just MemberPress), see <a href="%s">stop emails from your staging site</a>.', 'staging-disable-emails-memberpress'),
+                                esc_url($stop_all_doc)
+                            )
+                        );
+                        ?>
+                    </li>
+                </ul>
+            </div>
 
             <form method="post" action="">
                 <?php wp_nonce_field('staging_disable_emails_memberpress_settings'); ?>
@@ -146,14 +187,14 @@ class StagingDisableEmailsMemberPress {
                         </th>
                         <td>
                             <?php if ($is_staging): ?>
-                                <span style="color: #d63638; font-weight: bold;"><?php echo esc_html__('Staging Environment Detected', 'staging-disable-emails-memberpress'); ?></span>
+                                <span style="color: #d63638; font-weight: bold;"><?php echo esc_html__('Non-production environment detected', 'staging-disable-emails-memberpress'); ?></span>
                                 <p class="description">
-                                    <?php echo esc_html__('This site has been detected as a staging environment. MemberPress emails will be disabled when the option above is enabled.', 'staging-disable-emails-memberpress'); ?>
+                                    <?php echo esc_html__('Staging, local, or development is detected (URL, WP_ENVIRONMENT_TYPE, WP_ENV, or custom filter). MemberPress emails will be disabled when the option above is enabled.', 'staging-disable-emails-memberpress'); ?>
                                 </p>
                             <?php else: ?>
-                                <span style="color: #00a32a; font-weight: bold;"><?php echo esc_html__('Production Environment', 'staging-disable-emails-memberpress'); ?></span>
+                                <span style="color: #00a32a; font-weight: bold;"><?php echo esc_html__('Production environment', 'staging-disable-emails-memberpress'); ?></span>
                                 <p class="description">
-                                    <?php echo esc_html__('This site does not appear to be a staging environment. The plugin will not disable emails here.', 'staging-disable-emails-memberpress'); ?>
+                                    <?php echo esc_html__('This site is treated as production. The plugin will not disable MemberPress emails here.', 'staging-disable-emails-memberpress'); ?>
                                 </p>
                             <?php endif; ?>
                         </td>
@@ -170,21 +211,24 @@ class StagingDisableEmailsMemberPress {
      * Check if we're on a staging environment.
      * 
      * Supports multiple detection methods:
-     * 1. WP_ENVIRONMENT_TYPE constant (WordPress 5.5+)
-     * 2. WP_ENV constant
-     * 3. URL contains 'staging' or 'stage'
+     * 1. WP_ENVIRONMENT_TYPE constant (WordPress 5.5+): staging, local
+     * 2. WP_ENV constant (staging, local, dev, etc.)
+     * 3. URL contains common dev/staging host markers
      * 4. Custom filter for additional detection methods
      * 
      * @return bool True if staging, false otherwise.
      */
     private function is_staging() {
         // Check WordPress environment type (WordPress 5.5+)
-        if (defined('WP_ENVIRONMENT_TYPE') && WP_ENVIRONMENT_TYPE === 'staging') {
-            return true;
+        if (defined('WP_ENVIRONMENT_TYPE')) {
+            $env = strtolower((string) WP_ENVIRONMENT_TYPE);
+            if (in_array($env, array('staging', 'local', 'development'), true)) {
+                return true;
+            }
         }
-        
+
         // Check WP_ENV constant
-        if (defined('WP_ENV') && in_array(strtolower(WP_ENV), array('staging', 'stage', 'dev', 'development'))) {
+        if (defined('WP_ENV') && in_array(strtolower((string) WP_ENV), array('staging', 'stage', 'local', 'dev', 'development'), true)) {
             return true;
         }
         
@@ -220,67 +264,156 @@ class StagingDisableEmailsMemberPress {
         if (!$this->is_enabled()) {
             return $recipients;
         }
-        
+
+        $this->log_suppressed(
+            'mepr_wp_mail_recipients',
+            is_string($subject) ? $subject : ''
+        );
+
         // Return empty array to prevent MemberPress emails from being sent
         // This only affects emails sent through MemberPress's email system
         return array();
     }
-    
+
     /**
-     * Disable all MemberPress addon emails by checking if email originates from any MemberPress addon.
-     * 
-     * Many MemberPress addons (Courses, Gifting, Downloads, etc.) use their own email systems
-     * that call wp_mail() directly, bypassing the core MeprUtils::wp_mail() filter.
-     * This function detects emails from any memberpress-* plugin and blocks them.
-     * 
-     * @param null|bool|WP_Error $return Short-circuit return value. If null, continue sending.
-     * 
-     * @return null|bool|WP_Error Return true to short-circuit, null to continue.
+     * Short-circuit wp_mail when the call stack shows MemberPress core or add-ons.
+     *
+     * @param null|bool|WP_Error $return Prior short-circuit value.
+     * @param array|null         $atts  wp_mail arguments (WordPress 5.7+).
+     *
+     * @return null|bool|WP_Error
      */
-    public function disable_courses_emails($return) {
-        // If already short-circuited, don't interfere
+    public function disable_memberpress_wp_mail($return, $atts = null) {
         if ($return !== null) {
             return $return;
         }
-        
-        // Only disable if the feature is enabled
+
         if (!$this->is_enabled()) {
             return null;
         }
-        
-        // Check the call stack to see if this email is coming from any MemberPress addon
-        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 20);
-        
+
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 25);
+
         foreach ($backtrace as $trace) {
-            // Check if the call is from any MemberPress addon (memberpress-* plugins)
-            if (isset($trace['file'])) {
-                $file = $trace['file'];
-                
-                // Check if file is from a memberpress-* plugin directory
-                // This catches: memberpress-courses, memberpress-gifting, memberpress-downloads, etc.
-                if (preg_match('/\/memberpress-[^\/]+\//', $file)) {
-                    // Check if it's from an email-related class or function
-                    if (isset($trace['class']) && 
-                        (stripos($trace['class'], 'Email') !== false || 
-                         stripos($trace['class'], 'Utils') !== false)) {
-                        // This is a MemberPress addon email - block it by returning true
-                        return true;
-                    }
-                    
-                    // Also check function names for email-related functions
-                    if (isset($trace['function']) && 
-                        (stripos($trace['function'], 'wp_mail') !== false ||
-                         stripos($trace['function'], 'send') !== false ||
-                         stripos($trace['function'], 'email') !== false)) {
-                        // This is likely a MemberPress addon email - block it
-                        return true;
-                    }
+            if (empty($trace['file'])) {
+                continue;
+            }
+
+            $origin = $this->get_memberpress_plugin_origin($trace['file']);
+            if ($origin === '') {
+                continue;
+            }
+
+            if ($this->trace_frame_suggests_email_send($trace)) {
+                $subject = '';
+                if (is_array($atts) && isset($atts['subject']) && is_string($atts['subject'])) {
+                    $subject = $atts['subject'];
                 }
+                $this->log_suppressed('pre_wp_mail', $subject, $origin, $trace['file']);
+                return true;
             }
         }
-        
-        // Not a MemberPress addon email, allow it through
+
         return null;
+    }
+
+    /**
+     * Resolve whether a file path belongs to core MemberPress or a memberpress-* add-on.
+     *
+     * @param string $file Absolute file path from backtrace.
+     *
+     * @return string 'core', 'addon', or empty string.
+     */
+    private function get_memberpress_plugin_origin($file) {
+        $file = wp_normalize_path($file);
+        $plugins_dir = wp_normalize_path(WP_PLUGIN_DIR);
+        $quoted_plugins = preg_quote($plugins_dir, '#');
+
+        // Core plugin directory: wp-content/plugins/memberpress/ (not memberpress-courses, etc.)
+        if (preg_match('#^' . $quoted_plugins . '/memberpress/#', $file)) {
+            return 'core';
+        }
+
+        // Add-ons: wp-content/plugins/memberpress-{name}/
+        if (preg_match('#^' . $quoted_plugins . '/memberpress-[^/]+/#', $file)) {
+            return 'addon';
+        }
+
+        return '';
+    }
+
+    /**
+     * Heuristic: stack frame is likely part of sending mail.
+     *
+     * @param array $trace Single frame from debug_backtrace().
+     *
+     * @return bool
+     */
+    private function trace_frame_suggests_email_send(array $trace) {
+        if (!empty($trace['class'])) {
+            $class = (string) $trace['class'];
+            if (stripos($class, 'Email') !== false || stripos($class, 'Utils') !== false) {
+                return true;
+            }
+        }
+        if (!empty($trace['function'])) {
+            $fn = (string) $trace['function'];
+            if (stripos($fn, 'wp_mail') !== false
+                || stripos($fn, 'send') !== false
+                || stripos($fn, 'email') !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether to write suppressed-email lines to the PHP error log.
+     *
+     * Enable with: add_filter('staging_disable_emails_memberpress_log_suppressed', '__return_true');
+     * Or define STAGING_DISABLE_MEPR_EMAILS_DEBUG as true in wp-config.php.
+     *
+     * @return bool
+     */
+    private function should_log_suppressed() {
+        if ($this->debug_log_active !== null) {
+            return $this->debug_log_active;
+        }
+
+        $active = (defined('STAGING_DISABLE_MEPR_EMAILS_DEBUG') && STAGING_DISABLE_MEPR_EMAILS_DEBUG);
+        if (!$active) {
+            $active = (bool) apply_filters('staging_disable_emails_memberpress_log_suppressed', false);
+        }
+
+        $this->debug_log_active = $active;
+        return $this->debug_log_active;
+    }
+
+    /**
+     * Log a blocked send when debug logging is enabled.
+     *
+     * @param string $channel Filter channel identifier.
+     * @param string $subject Email subject if known.
+     * @param string $origin  core|addon.
+     * @param string $file    Source file from backtrace (optional).
+     */
+    private function log_suppressed($channel, $subject, $origin = '', $file = '') {
+        if (!$this->should_log_suppressed()) {
+            return;
+        }
+
+        $line = sprintf(
+            '[staging-disable-emails-memberpress] Suppressed (%s)%s subject=%s',
+            $channel,
+            $origin !== '' ? ' origin=' . $origin : '',
+            $subject !== '' ? $subject : '(empty)'
+        );
+        if ($file !== '') {
+            $line .= ' file=' . $file;
+        }
+
+        error_log($line);
     }
 }
 
