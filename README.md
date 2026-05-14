@@ -3,6 +3,9 @@
 WordPress plugin for **MemberPress staging safe mode**: block MemberPress-related mail, pause reminders, bias gateways toward test/sandbox at runtime, optionally unload Developer Tools, optionally **force** non-production when automatic detection still says production, and optionally notify admins when non-production is detected — without turning off normal WordPress email (2FA, password reset, etc.).
 
 **Version:** 1.3.2  
+Tested up to: 6.8  
+Stable tag: 1.3.2  
+License: GPLv2 or later  
 **Requires:** WordPress 5.0+, PHP 7.4+, MemberPress (active) for the settings screen and MemberPress hooks.
 
 ---

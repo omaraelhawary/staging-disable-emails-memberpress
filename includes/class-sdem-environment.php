@@ -65,6 +65,8 @@ class SDEM_Environment {
             }
         }
 
+        // MemberPress / ecosystem compatibility filter name (not prefixed by this plugin).
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
         $is_staging = apply_filters('mepr_disable_emails_is_staging', false);
         return (bool) apply_filters('staging_disable_emails_memberpress_is_staging', $is_staging);
     }

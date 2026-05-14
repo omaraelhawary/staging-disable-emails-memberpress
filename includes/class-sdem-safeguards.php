@@ -206,6 +206,7 @@ class SDEM_Safeguards {
             return null;
         }
 
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_debug_backtrace -- Caller stack required to attribute wp_mail to MemberPress.
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 25);
 
         foreach ($backtrace as $trace) {
@@ -314,6 +315,7 @@ class SDEM_Safeguards {
             $line .= ' file=' . $file;
         }
 
+        // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Opt-in debug only; see should_log_suppressed().
         error_log($line);
     }
 

@@ -83,9 +83,10 @@ class SDEM_Admin {
         }
 
         if (isset($_POST['submit']) && check_admin_referer('staging_disable_emails_memberpress_settings')) {
-            $posted = isset($_POST[SDEM_Config::CONFIG_OPTION]) && is_array($_POST[SDEM_Config::CONFIG_OPTION])
-                ? wp_unslash($_POST[SDEM_Config::CONFIG_OPTION])
-                : array();
+            $posted = array();
+            if (isset($_POST[SDEM_Config::CONFIG_OPTION]) && is_array($_POST[SDEM_Config::CONFIG_OPTION])) {
+                $posted = map_deep(wp_unslash($_POST[SDEM_Config::CONFIG_OPTION]), 'sanitize_text_field');
+            }
             $this->config->save($this->config->sanitize_posted($posted));
             echo '<div class="notice notice-success"><p>' . esc_html__('Settings saved.', 'staging-disable-emails-memberpress') . '</p></div>';
         }
