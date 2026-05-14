@@ -4,7 +4,7 @@ Tags: memberpress, staging, email, sandbox, reminders
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.3.2
+Stable tag: 1.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -35,6 +35,9 @@ No. The email-related safeguard targets MemberPress-related sends as implemented
 Yes, for the admin UI and MemberPress-specific hooks. The plugin expects MemberPress to be active for the staging safe mode screen.
 
 == Changelog ==
+
+= 1.3.3 =
+* Distribution ZIP is built without hidden/dot files (for example `.gitignore` is not bundled). Maintainer build instructions live in the `scripts/` directory on GitHub and are not included in the plugin archive.
 
 = 1.3.2 =
 * Maintenance and compatibility updates.
