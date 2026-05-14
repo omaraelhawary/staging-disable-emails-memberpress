@@ -2,7 +2,7 @@
 /**
  * MemberPress safeguards: email interception, reminders, gateways, Developer Tools.
  *
- * @package StagingDisableEmailsMemberPress
+ * @package StagingSafeModeForMemberPress
  */
 
 if (!defined('ABSPATH')) {
@@ -306,7 +306,7 @@ class SDEM_Safeguards {
         }
 
         $line = sprintf(
-            '[staging-disable-emails-memberpress] Suppressed (%s)%s subject=%s',
+            '[staging-safe-mode-for-memberpress] Suppressed (%s)%s subject=%s',
             $channel,
             $origin !== '' ? ' origin=' . $origin : '',
             $subject !== '' ? $subject : '(empty)'

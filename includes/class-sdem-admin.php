@@ -2,7 +2,7 @@
 /**
  * MemberPress submenu and settings screen.
  *
- * @package StagingDisableEmailsMemberPress
+ * @package StagingSafeModeForMemberPress
  */
 
 if (!defined('ABSPATH')) {
@@ -51,10 +51,10 @@ class SDEM_Admin {
 
         add_submenu_page(
             'memberpress',
-            __('Staging safe mode', 'staging-disable-emails-memberpress'),
-            __('Staging safe mode', 'staging-disable-emails-memberpress'),
+            __('Staging safe mode', 'staging-safe-mode-for-memberpress'),
+            __('Staging safe mode', 'staging-safe-mode-for-memberpress'),
             $this->env->get_menu_capability(),
-            'staging-disable-emails-memberpress',
+            'staging-safe-mode-for-memberpress',
             array($this, 'render_page')
         );
     }
@@ -88,7 +88,7 @@ class SDEM_Admin {
                 $posted = map_deep(wp_unslash($_POST[SDEM_Config::CONFIG_OPTION]), 'sanitize_text_field');
             }
             $this->config->save($this->config->sanitize_posted($posted));
-            echo '<div class="notice notice-success"><p>' . esc_html__('Settings saved.', 'staging-disable-emails-memberpress') . '</p></div>';
+            echo '<div class="notice notice-success"><p>' . esc_html__('Settings saved.', 'staging-safe-mode-for-memberpress') . '</p></div>';
         }
 
         $c = $this->config->get();
@@ -100,12 +100,12 @@ class SDEM_Admin {
         $pfx = SDEM_Config::CONFIG_OPTION;
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html__('MemberPress staging safe mode', 'staging-disable-emails-memberpress'); ?></h1>
+            <h1><?php echo esc_html__('MemberPress staging safe mode', 'staging-safe-mode-for-memberpress'); ?></h1>
 
             <div class="card" style="max-width: 52rem; margin-bottom: 1.25rem;">
-                <h2 class="title" style="margin-top: 0;"><?php echo esc_html__('Official guidance', 'staging-disable-emails-memberpress'); ?></h2>
+                <h2 class="title" style="margin-top: 0;"><?php echo esc_html__('Official guidance', 'staging-safe-mode-for-memberpress'); ?></h2>
                 <p class="description" style="margin-top: 0;">
-                    <?php echo esc_html__('Use this plugin together with MemberPress docs for cloning, gateways, and webhooks.', 'staging-disable-emails-memberpress'); ?>
+                    <?php echo esc_html__('Use this plugin together with MemberPress docs for cloning, gateways, and webhooks.', 'staging-safe-mode-for-memberpress'); ?>
                 </p>
                 <ul style="list-style: disc; margin-left: 1.25em;">
                     <li>
@@ -113,7 +113,7 @@ class SDEM_Admin {
                         echo wp_kses_post(
                             sprintf(
                                 /* translators: %s: MemberPress staging documentation URL */
-                                __('<a href="%s">How to create a staging site with MemberPress</a> (gateways, connection data, test mode).', 'staging-disable-emails-memberpress'),
+                                __('<a href="%s">How to create a staging site with MemberPress</a> (gateways, connection data, test mode).', 'staging-safe-mode-for-memberpress'),
                                 esc_url($staging_doc)
                             )
                         );
@@ -124,7 +124,7 @@ class SDEM_Admin {
                         echo wp_kses_post(
                             sprintf(
                                 /* translators: %s: URL */
-                                __('<a href="%s">Stop all emails from staging</a> if you need to block WordPress-wide mail.', 'staging-disable-emails-memberpress'),
+                                __('<a href="%s">Stop all emails from staging</a> if you need to block WordPress-wide mail.', 'staging-safe-mode-for-memberpress'),
                                 esc_url($stop_all_doc)
                             )
                         );
@@ -139,85 +139,85 @@ class SDEM_Admin {
                 <table class="form-table">
                     <tr>
                         <th scope="row">
-                            <?php echo esc_html__('Enable safe mode', 'staging-disable-emails-memberpress'); ?>
+                            <?php echo esc_html__('Enable safe mode', 'staging-safe-mode-for-memberpress'); ?>
                         </th>
                         <td>
                             <label>
                                 <input type="checkbox" name="<?php echo esc_attr($pfx); ?>[enabled]" value="1" <?php checked(!empty($c['enabled']), true); ?>>
-                                <?php echo esc_html__('Turn on MemberPress safeguards on non-production environments only', 'staging-disable-emails-memberpress'); ?>
+                                <?php echo esc_html__('Turn on MemberPress safeguards on non-production environments only', 'staging-safe-mode-for-memberpress'); ?>
                             </label>
                             <p class="description" style="margin-top: 0.5rem;">
-                                <?php echo esc_html__('Non-production is detected from WordPress environment constants, your site URL, or custom filters. If this install is still reported as production, use the option below.', 'staging-disable-emails-memberpress'); ?>
+                                <?php echo esc_html__('Non-production is detected from WordPress environment constants, your site URL, or custom filters. If this install is still reported as production, use the option below.', 'staging-safe-mode-for-memberpress'); ?>
                             </p>
                             <label style="display: block; margin-top: 0.75rem;">
                                 <input type="checkbox" name="<?php echo esc_attr($pfx); ?>[force_nonproduction]" value="1" <?php checked(!empty($c['force_nonproduction']), true); ?>>
-                                <?php echo esc_html__('Force treat this site as non-production (overrides automatic detection)', 'staging-disable-emails-memberpress'); ?>
+                                <?php echo esc_html__('Force treat this site as non-production (overrides automatic detection)', 'staging-safe-mode-for-memberpress'); ?>
                             </label>
                             <p class="description">
-                                <?php echo esc_html__('Use only on staging clones or when you accept that safeguards (emails blocked, test gateways, etc.) will run on this URL. Turn off before pointing a live domain here.', 'staging-disable-emails-memberpress'); ?>
+                                <?php echo esc_html__('Use only on staging clones or when you accept that safeguards (emails blocked, test gateways, etc.) will run on this URL. Turn off before pointing a live domain here.', 'staging-safe-mode-for-memberpress'); ?>
                             </p>
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row"><?php echo esc_html__('Safeguards', 'staging-disable-emails-memberpress'); ?></th>
+                        <th scope="row"><?php echo esc_html__('Safeguards', 'staging-safe-mode-for-memberpress'); ?></th>
                         <td>
                             <fieldset>
                                 <label>
                                     <input type="checkbox" name="<?php echo esc_attr($pfx); ?>[emails]" value="1" <?php checked(!empty($c['emails']), true); ?>>
-                                    <?php echo esc_html__('Block MemberPress-related email (core + add-ons that use MemberPress mail paths)', 'staging-disable-emails-memberpress'); ?>
+                                    <?php echo esc_html__('Block MemberPress-related email (core + add-ons that use MemberPress mail paths)', 'staging-safe-mode-for-memberpress'); ?>
                                 </label><br>
                                 <label>
                                     <input type="checkbox" name="<?php echo esc_attr($pfx); ?>[reminders]" value="1" <?php checked(!empty($c['reminders']), true); ?>>
-                                    <?php echo esc_html__('Pause reminder crons and block reminder emails (matches disabling reminder processing)', 'staging-disable-emails-memberpress'); ?>
+                                    <?php echo esc_html__('Pause reminder crons and block reminder emails (matches disabling reminder processing)', 'staging-safe-mode-for-memberpress'); ?>
                                 </label><br>
                                 <label>
                                     <input type="checkbox" name="<?php echo esc_attr($pfx); ?>[gateways]" value="1" <?php checked(!empty($c['gateways']), true); ?>>
-                                    <?php echo esc_html__('Force test / sandbox flags in MemberPress payment settings at runtime (does not edit the database)', 'staging-disable-emails-memberpress'); ?>
+                                    <?php echo esc_html__('Force test / sandbox flags in MemberPress payment settings at runtime (does not edit the database)', 'staging-safe-mode-for-memberpress'); ?>
                                 </label>
                                 <p class="description">
-                                    <?php echo esc_html__('Supports Stripe, Square, legacy PayPal gateways, Authorize.Net. PayPal Commerce uses Connect and its own live/test detection—use a sandbox connection per MemberPress docs.', 'staging-disable-emails-memberpress'); ?>
+                                    <?php echo esc_html__('Supports Stripe, Square, legacy PayPal gateways, Authorize.Net. PayPal Commerce uses Connect and its own live/test detection—use a sandbox connection per MemberPress docs.', 'staging-safe-mode-for-memberpress'); ?>
                                 </p>
                                 <label>
                                     <input type="checkbox" name="<?php echo esc_attr($pfx); ?>[developer_tools]" value="1" <?php checked(!empty($c['developer_tools']), true); ?>>
-                                    <?php echo esc_html__('Deactivate the MemberPress Developer Tools add-on while safe mode is on (reactivates when you turn this off or disable safe mode)', 'staging-disable-emails-memberpress'); ?>
+                                    <?php echo esc_html__('Deactivate the MemberPress Developer Tools add-on while safe mode is on (reactivates when you turn this off or disable safe mode)', 'staging-safe-mode-for-memberpress'); ?>
                                 </label>
                             </fieldset>
                         </td>
                     </tr>
                     <tr>
-                        <th scope="row"><?php echo esc_html__('Notifications', 'staging-disable-emails-memberpress'); ?></th>
+                        <th scope="row"><?php echo esc_html__('Notifications', 'staging-safe-mode-for-memberpress'); ?></th>
                         <td>
                             <label>
                                 <input type="checkbox" name="<?php echo esc_attr($pfx); ?>[notify_staging_detection]" value="1" <?php checked(!empty($c['notify_staging_detection']), true); ?>>
-                                <?php echo esc_html__('Email site admin once when a non-production environment is first detected (per site URL)', 'staging-disable-emails-memberpress'); ?>
+                                <?php echo esc_html__('Email site admin once when a non-production environment is first detected (per site URL)', 'staging-safe-mode-for-memberpress'); ?>
                             </label>
                             <p class="description">
-                                <?php echo esc_html__('Uses WordPress wp_mail to the admin email (or addresses you filter in code). Independent of MemberPress email blocking.', 'staging-disable-emails-memberpress'); ?>
+                                <?php echo esc_html__('Uses WordPress wp_mail to the admin email (or addresses you filter in code). Independent of MemberPress email blocking.', 'staging-safe-mode-for-memberpress'); ?>
                             </p>
                         </td>
                     </tr>
                     <tr>
                         <th scope="row">
-                            <?php echo esc_html__('Environment', 'staging-disable-emails-memberpress'); ?>
+                            <?php echo esc_html__('Environment', 'staging-safe-mode-for-memberpress'); ?>
                         </th>
                         <td>
                             <?php if ($is_staging) : ?>
                                 <?php if ($forced_nonproduction) : ?>
-                                    <span style="color: #d63638; font-weight: bold;"><?php echo esc_html__('Non-production (forced)', 'staging-disable-emails-memberpress'); ?></span>
+                                    <span style="color: #d63638; font-weight: bold;"><?php echo esc_html__('Non-production (forced)', 'staging-safe-mode-for-memberpress'); ?></span>
                                     <p class="description">
-                                        <?php echo esc_html__('Safeguards treat this install as non-production because you enabled the override. Automatic detection still reports:', 'staging-disable-emails-memberpress'); ?>
-                                        <?php echo $detected_nonproduction ? ' ' . esc_html__('non-production', 'staging-disable-emails-memberpress') : ' ' . esc_html__('production', 'staging-disable-emails-memberpress'); ?>.
+                                        <?php echo esc_html__('Safeguards treat this install as non-production because you enabled the override. Automatic detection still reports:', 'staging-safe-mode-for-memberpress'); ?>
+                                        <?php echo $detected_nonproduction ? ' ' . esc_html__('non-production', 'staging-safe-mode-for-memberpress') : ' ' . esc_html__('production', 'staging-safe-mode-for-memberpress'); ?>.
                                     </p>
                                 <?php else : ?>
-                                    <span style="color: #d63638; font-weight: bold;"><?php echo esc_html__('Non-production detected', 'staging-disable-emails-memberpress'); ?></span>
+                                    <span style="color: #d63638; font-weight: bold;"><?php echo esc_html__('Non-production detected', 'staging-safe-mode-for-memberpress'); ?></span>
                                     <p class="description">
-                                        <?php echo esc_html__('Safe mode runs here when enabled (staging / local / development URL or constants, or your custom filter).', 'staging-disable-emails-memberpress'); ?>
+                                        <?php echo esc_html__('Safe mode runs here when enabled (staging / local / development URL or constants, or your custom filter).', 'staging-safe-mode-for-memberpress'); ?>
                                     </p>
                                 <?php endif; ?>
                             <?php else : ?>
-                                <span style="color: #00a32a; font-weight: bold;"><?php echo esc_html__('Production', 'staging-disable-emails-memberpress'); ?></span>
+                                <span style="color: #00a32a; font-weight: bold;"><?php echo esc_html__('Production', 'staging-safe-mode-for-memberpress'); ?></span>
                                 <p class="description">
-                                    <?php echo esc_html__('Safeguards do not run on this environment.', 'staging-disable-emails-memberpress'); ?>
+                                    <?php echo esc_html__('Safeguards do not run on this environment.', 'staging-safe-mode-for-memberpress'); ?>
                                 </p>
                             <?php endif; ?>
                         </td>

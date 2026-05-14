@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-SLUG="staging-disable-emails-memberpress"
+SLUG="staging-safe-mode-for-memberpress"
 VERSION="$(grep -m1 'Version:' "${SLUG}.php" | awk '{print $3}' | tr -d '\r')"
 if [[ -z "${VERSION}" ]]; then
   echo "Could not read Version from ${SLUG}.php" >&2

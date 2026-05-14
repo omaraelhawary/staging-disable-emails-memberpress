@@ -1,10 +1,10 @@
-# Staging Disable Emails for MemberPress
+# Staging Safe Mode for MemberPress
 
 WordPress plugin for **MemberPress staging safe mode**: block MemberPress-related mail, pause reminders, bias gateways toward test/sandbox at runtime, optionally unload Developer Tools, optionally **force** non-production when automatic detection still says production, and optionally notify admins when non-production is detected — without turning off normal WordPress email (2FA, password reset, etc.).
 
-**Version:** 1.3.3  
+**Version:** 1.3.4  
 Tested up to: 6.8  
-Stable tag: 1.3.3  
+Stable tag: 1.3.4  
 License: GPLv2 or later  
 **Requires:** WordPress 5.0+, PHP 7.4+, MemberPress (active) for the settings screen and MemberPress hooks.
 
@@ -33,7 +33,7 @@ Official MemberPress staging guidance: [How to create a staging site with Member
 ## Installation
 
 1. Copy the plugin folder into `wp-content/plugins/` (or install via ZIP in **Plugins → Add New**).
-2. Activate **Staging Disable Emails for MemberPress**.
+2. Activate **Staging Safe Mode for MemberPress**.
 3. Ensure **MemberPress** is active (the settings UI is a **MemberPress** submenu).
 
 There is **no** entry under **Settings**; everything lives under **MemberPress → Staging safe mode**.
@@ -131,6 +131,8 @@ add_filter( 'staging_disable_emails_memberpress_is_staging', function ( $is_stag
 
 ## Filters (developers)
 
+Hook and option **names** still use the historical prefix `staging_disable_emails_memberpress_*` so existing snippets and database rows keep working; only the plugin display name, folder slug, text domain, and settings `page` query arg changed in 1.3.4.
+
 | Filter | Default | Purpose |
 |--------|---------|---------|
 | `staging_disable_emails_memberpress_is_staging` | — | Mark site as non-production. |
@@ -162,7 +164,7 @@ When `is_staging()` is true (automatic detection **or** force override) **and** 
 
 | Path | Role |
 |------|------|
-| `staging-disable-emails-memberpress.php` | Bootstrap: `SDEM_*` constants, loads `includes/`, starts `SDEM_Plugin`. |
+| `staging-safe-mode-for-memberpress.php` | Bootstrap: `SDEM_*` constants, loads `includes/`, starts `SDEM_Plugin`. |
 | `includes/class-sdem-plugin.php` | Singleton wiring: config, environment, notifier, admin, admin bar, safeguards. |
 | `includes/class-sdem-config.php` | Option names, defaults, migration, getters for each module. |
 | `includes/class-sdem-environment.php` | `is_staging()`, `is_nonproduction_detected()` (automatic path only), `get_menu_capability()`. |
@@ -175,6 +177,10 @@ When `is_staging()` is true (automatic detection **or** force override) **and** 
 ---
 
 ## Changelog
+
+### 1.3.4
+
+- Renamed to **Staging Safe Mode for MemberPress**; plugin directory and main file use slug `staging-safe-mode-for-memberpress`; text domain `staging-safe-mode-for-memberpress`; MemberPress submenu page slug updated. Option keys and `apply_filters` names are unchanged.
 
 ### 1.3.3
 

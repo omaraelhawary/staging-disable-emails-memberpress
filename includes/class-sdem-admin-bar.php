@@ -2,7 +2,7 @@
 /**
  * Admin bar badge for active safe mode.
  *
- * @package StagingDisableEmailsMemberPress
+ * @package StagingSafeModeForMemberPress
  */
 
 if (!defined('ABSPATH')) {
@@ -60,23 +60,23 @@ class SDEM_Admin_Bar {
 
         $modules = array();
         if ($this->config->module_emails()) {
-            $modules[] = __('emails', 'staging-disable-emails-memberpress');
+            $modules[] = __('emails', 'staging-safe-mode-for-memberpress');
         }
         if ($this->config->module_reminders()) {
-            $modules[] = __('reminders', 'staging-disable-emails-memberpress');
+            $modules[] = __('reminders', 'staging-safe-mode-for-memberpress');
         }
         if ($this->config->module_gateways()) {
-            $modules[] = __('gateways', 'staging-disable-emails-memberpress');
+            $modules[] = __('gateways', 'staging-safe-mode-for-memberpress');
         }
         if ($this->config->module_developer_tools()) {
-            $modules[] = __('dev tools', 'staging-disable-emails-memberpress');
+            $modules[] = __('dev tools', 'staging-safe-mode-for-memberpress');
         }
 
-        $tooltip = __('MemberPress staging safe mode is active.', 'staging-disable-emails-memberpress');
+        $tooltip = __('MemberPress staging safe mode is active.', 'staging-safe-mode-for-memberpress');
         if (!empty($modules)) {
             $tooltip .= ' ' . sprintf(
                 /* translators: %s: comma-separated list of active safeguard names */
-                __('Active: %s.', 'staging-disable-emails-memberpress'),
+                __('Active: %s.', 'staging-safe-mode-for-memberpress'),
                 implode(', ', $modules)
             );
         }
@@ -85,8 +85,8 @@ class SDEM_Admin_Bar {
             array(
                 'id'     => 'sdem-safe-mode',
                 'parent' => 'top-secondary',
-                'title'  => esc_html__('MP Safe Mode', 'staging-disable-emails-memberpress'),
-                'href'   => admin_url('admin.php?page=staging-disable-emails-memberpress'),
+                'title'  => esc_html__('MP Safe Mode', 'staging-safe-mode-for-memberpress'),
+                'href'   => admin_url('admin.php?page=staging-safe-mode-for-memberpress'),
                 'meta'   => array(
                     'title' => esc_attr($tooltip),
                     'class' => 'sdem-safe-mode-badge',

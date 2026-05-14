@@ -2,7 +2,7 @@
 /**
  * One-time admin email when non-production is detected (per site URL hash).
  *
- * @package StagingDisableEmailsMemberPress
+ * @package StagingSafeModeForMemberPress
  */
 
 if (!defined('ABSPATH')) {
@@ -83,27 +83,27 @@ class SDEM_Staging_Notifier {
             return;
         }
 
-        $settings_url = admin_url('admin.php?page=staging-disable-emails-memberpress');
+        $settings_url = admin_url('admin.php?page=staging-safe-mode-for-memberpress');
         $subject      = sprintf(
             /* translators: %s: site title */
-            __('[%s] Non-production environment detected', 'staging-disable-emails-memberpress'),
+            __('[%s] Non-production environment detected', 'staging-safe-mode-for-memberpress'),
             wp_specialchars_decode(get_option('blogname'), ENT_QUOTES)
         );
 
         $lines = array(
             sprintf(
                 /* translators: %s: home URL */
-                __('WordPress reports this site as non-production (staging, local, or similar): %s', 'staging-disable-emails-memberpress'),
+                __('WordPress reports this site as non-production (staging, local, or similar): %s', 'staging-safe-mode-for-memberpress'),
                 home_url()
             ),
             '',
             sprintf(
                 /* translators: %s: URL to plugin settings */
-                __('Review MemberPress staging safe mode settings: %s', 'staging-disable-emails-memberpress'),
+                __('Review MemberPress staging safe mode settings: %s', 'staging-safe-mode-for-memberpress'),
                 $settings_url
             ),
             '',
-            __('This message is sent at most once per site address when an administrator visits the dashboard.', 'staging-disable-emails-memberpress'),
+            __('This message is sent at most once per site address when an administrator visits the dashboard.', 'staging-safe-mode-for-memberpress'),
         );
 
         $body = implode("\n", $lines);

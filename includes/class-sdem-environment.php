@@ -2,7 +2,7 @@
 /**
  * Staging / non-production detection.
  *
- * @package StagingDisableEmailsMemberPress
+ * @package StagingSafeModeForMemberPress
  */
 
 if (!defined('ABSPATH')) {

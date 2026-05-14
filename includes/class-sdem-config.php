@@ -2,7 +2,7 @@
 /**
  * Options, defaults, migration, and module flags.
  *
- * @package StagingDisableEmailsMemberPress
+ * @package StagingSafeModeForMemberPress
  */
 
 if (!defined('ABSPATH')) {

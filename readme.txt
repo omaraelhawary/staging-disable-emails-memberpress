@@ -1,10 +1,10 @@
-=== Staging Disable Emails for MemberPress ===
+=== Staging Safe Mode for MemberPress ===
 Contributors: omaraelhawary
 Tags: memberpress, staging, email, sandbox, reminders
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.3.3
+Stable tag: 1.3.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,7 +20,7 @@ Official MemberPress staging guidance: [How to create a staging site with Member
 
 == Installation ==
 
-1. Upload the plugin files to the `/wp-content/plugins/staging-disable-emails-memberpress` directory, or install the plugin through the WordPress plugins screen directly.
+1. Upload the plugin files to the `/wp-content/plugins/staging-safe-mode-for-memberpress` directory, or install the plugin through the WordPress plugins screen directly.
 2. Activate the plugin through the **Plugins** screen in WordPress.
 3. Open **MemberPress → Staging safe mode** to configure safeguards (MemberPress must be active for that menu).
 
@@ -35,6 +35,9 @@ No. The email-related safeguard targets MemberPress-related sends as implemented
 Yes, for the admin UI and MemberPress-specific hooks. The plugin expects MemberPress to be active for the staging safe mode screen.
 
 == Changelog ==
+
+= 1.3.4 =
+* Renamed plugin to **Staging Safe Mode for MemberPress**; directory / main file slug `staging-safe-mode-for-memberpress`; text domain updated. Settings screen URL is now `admin.php?page=staging-safe-mode-for-memberpress`. Database option keys and `apply_filters` hook names are unchanged for compatibility.
 
 = 1.3.3 =
 * Distribution ZIP is built without hidden/dot files (for example `.gitignore` is not bundled). Maintainer build instructions live in the `scripts/` directory on GitHub and are not included in the plugin archive.

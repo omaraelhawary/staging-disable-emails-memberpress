@@ -2,7 +2,7 @@
 /**
  * Loads includes and boots subsystems.
  *
- * @package StagingDisableEmailsMemberPress
+ * @package StagingSafeModeForMemberPress
  */
 
 if (!defined('ABSPATH')) {
