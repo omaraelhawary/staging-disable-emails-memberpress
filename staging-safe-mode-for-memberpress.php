@@ -2,8 +2,8 @@
 /**
  * Plugin Name: Staging Safe Mode for MemberPress
  * Plugin URI: https://github.com/omaraelhawary/
- * Description: Staging / local safeguards for MemberPress: emails, reminders, gateway test & sandbox flags at runtime, optional Developer Tools deactivation, optional force non-production override, and one-time staging detection email.
- * Version: 1.3.4
+ * Description: Staging / local safeguards for MemberPress: emails, reminders, gateway test & sandbox flags at runtime, optional Developer Tools deactivation, optional force non-production override, and optional admin notification emails.
+ * Version: 1.3.5
  * Requires at least: 5.0
  * Requires PHP: 7.4
  * Author: Omar ElHawary
@@ -19,7 +19,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('SDEM_VERSION', '1.3.4');
+define('SDEM_VERSION', '1.3.5');
 define('SDEM_PLUGIN_FILE', __FILE__);
 define('SDEM_PLUGIN_DIR', plugin_dir_path(__FILE__));
 

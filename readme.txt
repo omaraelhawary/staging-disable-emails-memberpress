@@ -4,7 +4,7 @@ Tags: memberpress, staging, email, sandbox, reminders
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.3.4
+Stable tag: 1.3.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -35,6 +35,9 @@ No. The email-related safeguard targets MemberPress-related sends as implemented
 Yes, for the admin UI and MemberPress-specific hooks. The plugin expects MemberPress to be active for the staging safe mode screen.
 
 == Changelog ==
+
+= 1.3.5 =
+* Notifications: email when non-production is detected, when force non-production is first enabled, or when safe mode is first turned on (up to three one-time emails per site URL). Sends after saving settings or on admin visits.
 
 = 1.3.4 =
 * Renamed plugin to **Staging Safe Mode for MemberPress**; directory / main file slug `staging-safe-mode-for-memberpress`; text domain updated. Settings screen URL is now `admin.php?page=staging-safe-mode-for-memberpress`. Database option keys and `apply_filters` hook names are unchanged for compatibility.

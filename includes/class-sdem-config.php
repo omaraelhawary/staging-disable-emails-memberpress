@@ -22,7 +22,10 @@ class SDEM_Config {
 
     const DT_FLAG_OPTION = 'staging_mepr_dt_deactivated_by_sdem';
 
+    /** @deprecated 1.3.5 Migrated into STAGING_NOTICES_SENT_KEY. */
     const STAGING_NOTICE_SENT_KEY = 'sdem_staging_detection_notice_sent_for';
+
+    const STAGING_NOTICES_SENT_KEY = 'sdem_staging_notices_sent';
 
     /**
      * @var array|null

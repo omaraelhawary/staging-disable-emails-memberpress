@@ -88,6 +88,7 @@ class SDEM_Admin {
                 $posted = map_deep(wp_unslash($_POST[SDEM_Config::CONFIG_OPTION]), 'sanitize_text_field');
             }
             $this->config->save($this->config->sanitize_posted($posted));
+            do_action('sdem_config_saved');
             echo '<div class="notice notice-success"><p>' . esc_html__('Settings saved.', 'staging-safe-mode-for-memberpress') . '</p></div>';
         }
 
@@ -189,10 +190,10 @@ class SDEM_Admin {
                         <td>
                             <label>
                                 <input type="checkbox" name="<?php echo esc_attr($pfx); ?>[notify_staging_detection]" value="1" <?php checked(!empty($c['notify_staging_detection']), true); ?>>
-                                <?php echo esc_html__('Email site admin once when a non-production environment is first detected (per site URL)', 'staging-safe-mode-for-memberpress'); ?>
+                                <?php echo esc_html__('Email site admin when staging is detected, when force non-production is first enabled, or when safe mode is first turned on (each at most once per site URL)', 'staging-safe-mode-for-memberpress'); ?>
                             </label>
                             <p class="description">
-                                <?php echo esc_html__('Uses WordPress wp_mail to the admin email (or addresses you filter in code). Independent of MemberPress email blocking.', 'staging-safe-mode-for-memberpress'); ?>
+                                <?php echo esc_html__('Uses WordPress wp_mail after you save settings or visit the dashboard. Independent of MemberPress email blocking.', 'staging-safe-mode-for-memberpress'); ?>
                             </p>
                         </td>
                     </tr>

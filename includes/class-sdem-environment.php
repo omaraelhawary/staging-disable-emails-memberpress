@@ -46,29 +46,59 @@ class SDEM_Environment {
      * @return bool
      */
     public function is_nonproduction_detected() {
+        return !empty($this->get_nonproduction_detection_reasons());
+    }
+
+    /**
+     * Human-readable signals that automatic detection treats this install as non-production.
+     *
+     * @return string[]
+     */
+    public function get_nonproduction_detection_reasons() {
+        $reasons = array();
+
         if (defined('WP_ENVIRONMENT_TYPE')) {
             $env = strtolower((string) WP_ENVIRONMENT_TYPE);
             if (in_array($env, array('staging', 'local', 'development'), true)) {
-                return true;
+                $reasons[] = sprintf(
+                    /* translators: %s: WP_ENVIRONMENT_TYPE value */
+                    __('WordPress environment type is "%s" (WP_ENVIRONMENT_TYPE)', 'staging-safe-mode-for-memberpress'),
+                    $env
+                );
             }
         }
 
-        if (defined('WP_ENV') && in_array(strtolower((string) WP_ENV), array('staging', 'stage', 'local', 'dev', 'development'), true)) {
-            return true;
+        if (defined('WP_ENV')) {
+            $wp_env = strtolower((string) WP_ENV);
+            if (in_array($wp_env, array('staging', 'stage', 'local', 'dev', 'development'), true)) {
+                $reasons[] = sprintf(
+                    /* translators: %s: WP_ENV value */
+                    __('WP_ENV is "%s"', 'staging-safe-mode-for-memberpress'),
+                    $wp_env
+                );
+            }
         }
 
-        $site_url = home_url();
+        $site_url           = home_url();
         $staging_indicators = array('staging', 'stage', '.test', '.local', 'localhost');
         foreach ($staging_indicators as $indicator) {
             if (stripos($site_url, $indicator) !== false) {
-                return true;
+                $reasons[] = sprintf(
+                    /* translators: %s: substring matched in the site URL */
+                    __('Site URL contains "%s"', 'staging-safe-mode-for-memberpress'),
+                    $indicator
+                );
             }
         }
 
         // MemberPress / ecosystem compatibility filter name (not prefixed by this plugin).
         // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound
         $is_staging = apply_filters('mepr_disable_emails_is_staging', false);
-        return (bool) apply_filters('staging_disable_emails_memberpress_is_staging', $is_staging);
+        if ((bool) apply_filters('staging_disable_emails_memberpress_is_staging', $is_staging)) {
+            $reasons[] = __('A custom filter marked this install as non-production', 'staging-safe-mode-for-memberpress');
+        }
+
+        return $reasons;
     }
 
     /**

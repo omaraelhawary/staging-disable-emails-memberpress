@@ -2,9 +2,9 @@
 
 WordPress plugin for **MemberPress staging safe mode**: block MemberPress-related mail, pause reminders, bias gateways toward test/sandbox at runtime, optionally unload Developer Tools, optionally **force** non-production when automatic detection still says production, and optionally notify admins when non-production is detected — without turning off normal WordPress email (2FA, password reset, etc.).
 
-**Version:** 1.3.4  
+**Version:** 1.3.5  
 Tested up to: 6.8  
-Stable tag: 1.3.4  
+Stable tag: 1.3.5  
 License: GPLv2 or later  
 **Requires:** WordPress 5.0+, PHP 7.4+, MemberPress (active) for the settings screen and MemberPress hooks.
 
@@ -24,7 +24,7 @@ Configure everything under **MemberPress → Staging safe mode**. When the site 
 | **Reminders** | Forces `mepr_disable_reminder_crons` via `pre_option_*` and sets MemberPress `mepr_{event}_reminder_disable` filters so reminder emails do not send. |
 | **Gateways** | Filters `option_mepr_options` so supported gateways get `test_mode` / `sandbox` at **read** time only (no DB write). PayPal Commerce / Connect is not forced; use MemberPress + PayPal sandbox docs. |
 | **Developer Tools** | Deactivates `memberpress-developer-tools/main.php` while this module is on; reactivates when you turn it off or leave non-production / disable safe mode (tracks a small flag option). |
-| **Notifications** | Optional: email site admin **once per `home_url()` hash** the first time a capable user hits `admin_init` when automatic detection sees non-production (uses `wp_mail`, not MemberPress). Skipped if you only use the **force** override (no “detected” email). |
+| **Notifications** | Optional: email site admin (up to **three** one-time notices per `home_url()` hash): when non-production is **detected**, when **force non-production** is first enabled, and when **safe mode** is first turned on. Sends after save or on `admin_init` (uses `wp_mail`, not MemberPress). |
 
 Official MemberPress staging guidance: [How to create a staging site with MemberPress](https://memberpress.com/docs/how-to-create-a-staging-site-with-memberpress/).
 
@@ -105,7 +105,7 @@ If automatic detection still shows **Production** (for example a clone on a URL 
 
 - Use only on real staging/dev clones, or when you accept that emails, reminders, gateway test mode, and Developer Tools handling will run on that URL.
 - Turn the override **off** before the same WordPress install serves a live production domain.
-- The one-time “non-production detected” notification email is **not** sent when only the force option applies (the copy is meant for automatic detection).
+- With **Notifications** enabled, saving **force non-production** or turning on **safe mode** can each send a separate one-time admin email for this site URL (in addition to automatic detection).
 
 ### Custom detection
 
@@ -125,7 +125,7 @@ add_filter( 'staging_disable_emails_memberpress_is_staging', function ( $is_stag
 | `staging_disable_emails_memberpress_enabled` | Boolean mirror of master `enabled` (for older integrations that read this key). |
 | `mepr_disable_emails_staging_enabled` | Legacy; migrated into config on first read if present. |
 | `staging_mepr_dt_deactivated_by_sdem` | Set to `1` when this plugin deactivated Developer Tools so it can restore on toggle-off. |
-| `sdem_staging_detection_notice_sent_for` | MD5 of `home_url()` after the one-time staging notification email sends; delete to allow another send on the same URL (testing). |
+| `sdem_staging_notices_sent` | Map of trigger → MD5(`home_url()`): `detection`, `force`, `enabled`. Delete keys or the whole option to re-test. Legacy `sdem_staging_detection_notice_sent_for` is migrated into `detection`. |
 
 ---
 
@@ -177,6 +177,10 @@ When `is_staging()` is true (automatic detection **or** force override) **and** 
 ---
 
 ## Changelog
+
+### 1.3.5
+
+- **Notifications:** admin email now sends when non-production is detected, when **force non-production** is first enabled, and when **safe mode** is first turned on (up to three one-time emails per site URL). Notices run immediately after saving settings as well as on dashboard visits. Tracking option `sdem_staging_notices_sent` replaces a single flag for all triggers (legacy `sdem_staging_detection_notice_sent_for` migrates automatically).
 
 ### 1.3.4
 
